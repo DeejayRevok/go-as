@@ -1,0 +1,268 @@
+openapi: 3.0.0
+info:
+  title: AS
+  version: 0.1.0
+
+paths:
+  /status:
+    get:
+      operationId: status
+      tags: 
+        - Healthcheck
+      summary: Indicate the service has started up correctly and is ready to accept requests
+      responses:
+        200:
+          description: The service is ready to receive requests
+  /roles:
+    post:
+      security:
+        - BearerAuth: []
+      operationId: createRole
+      summary: Create a new Role
+      tags:
+       - Roles
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateRoleRequest"
+      responses:
+        201:
+          description: The role has been created
+        400:
+          $ref: "#/components/responses/BadRequest"
+  /permissions:
+    post:
+      security:
+        - BearerAuth: []
+      operationId: createPermission
+      summary: Create a new Permission
+      tags:
+        - Permissions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePermissionRequest"
+      responses:
+        201:
+          description: The permission has been created
+        400:
+          $ref: "#/components/responses/BadRequest"
+  /permissions/check:
+    post:
+      security:
+        - BearerAuth: []
+      operationId: checkPermissions
+      summary: Check if the authenticated user has permissions
+      tags:
+        - Permissions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CheckPermissionsRequest"
+      responses:
+        200:
+          description: Permissions check result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CheckPermissionsResponse"
+        400:
+          $ref: "#/components/responses/BadRequest"
+  /user/{email}/permissions:
+    put:
+      security:
+        - BearerAuth: []
+      operationId: updateUserPermissions
+      summary: Update the user permissions
+      tags:
+        - User
+      parameters:
+        - in: path
+          name: email
+          schema:
+            type: string
+          required: true
+          description: Email of the user to update permissions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateUserPermissionsRequest"
+      responses:
+        200:
+          description: Permissions updated succesfully
+        400:
+          $ref: "#/components/responses/BadRequest"
+  /user/{email}/roles:
+    put:
+      security:
+        - BearerAuth: []
+      operationId: updateUserRoles
+      summary: Update the user roles
+      tags:
+        - User
+      parameters:
+        - in: path
+          name: email
+          schema:
+            type: string
+          required: true
+          description: Email of the user to update roles
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateUserRolesRequest"
+      responses:
+        200:
+          description: Roles updated succesfully
+        400:
+          $ref: "#/components/responses/BadRequest"
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+  schemas:
+    Role:
+      type: object
+      required:
+        - id
+        - name
+        - permissions
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Identifier of the role
+        name:
+          type: string
+          description: Name of the role
+        permissions:
+          type: array
+          description: Permissions assigned to the role
+          items:
+            $ref: "#/components/schemas/Permission"
+    Permission:
+      type: object
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Identifier of the permission
+        name:
+          type: string
+          description: Name of the permission
+    CreateRoleRequest:
+      type: object
+      required:
+        - name
+        - permissions
+      properties:
+        name:
+          type: string
+          description: Name of the role
+        permissions:
+          type: array
+          description: Permissions assigned to this role
+          items:
+            type: string
+            format: uuid
+            description: Identifier of the permission
+    CreatePermissionRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          description: Name of the permission
+    CheckPermissionsRequest:
+      type: object
+      required:
+        - permissions
+      properties:
+        permissions:
+          type: array
+          description: Permissions to check in the authenticated user
+          items:
+            type: string
+            description: Name of the permission
+    CheckPermissionsResponse:
+      type: object
+      required:
+        - result
+      properties:
+        result:
+          type: boolean
+          description: True if the user has the permissions from the request, False otherwise
+    UpdateUserPermissionsRequest:
+      type: object
+      required:
+        - result
+      properties:
+        permissions:
+          type: array
+          description: Permissions to set for the user
+          items:
+            type: string
+            description: Name of the permission
+    UpdateUserRolesRequest:
+      type: object
+      required:
+        - result
+      properties:
+        roles:
+          type: array
+          description: Roles to set for the user
+          items:
+            type: string
+            description: Name of the role
+    BadRequestSchema:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          description: Message with detailed description about the problem
+    ErrorSchema:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          description: Message with detailed description about the problem
+
+  responses:
+    BadRequest:
+      description: There is a failure in the request format, expected headers, or the payload can't be unmarshalled
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/BadRequestSchema"
+    InternalServerError:
+      description: There is a failure processing the request
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorSchema"
+    UnauthorizedError:
+      description: User authentication has failed
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorSchema"

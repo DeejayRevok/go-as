@@ -1,0 +1,16 @@
+name: ci
+on:
+  push:
+permissions:
+  contents: read
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up environment
+        run: make setup-env
+      - name: Run linters
+        run: make lint
+      - name: Run tests
+        run: make test
