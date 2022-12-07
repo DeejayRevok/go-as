@@ -24,7 +24,11 @@ func (builder *IAMJWTRSAPublicKeyBuilder) Build() (*rsa.PublicKey, error) {
 		return nil, err
 	}
 
-	responseJson := builder.getJsonFromResponse(response)
+	responseJson, err := builder.getJsonFromResponse(response)
+	if err != nil {
+		return nil, err
+	}
+
 	signingKey := builder.getSigningKey(responseJson)
 	if signingKey == nil {
 		return nil, errors.New("signing key not found")
@@ -44,10 +48,13 @@ func (builder *IAMJWTRSAPublicKeyBuilder) Build() (*rsa.PublicKey, error) {
 	}, nil
 }
 
-func (*IAMJWTRSAPublicKeyBuilder) getJsonFromResponse(response *http.Response) map[string]interface{} {
+func (*IAMJWTRSAPublicKeyBuilder) getJsonFromResponse(response *http.Response) (map[string]interface{}, error) {
 	var parsedJson map[string]interface{}
-	json.NewDecoder(response.Body).Decode(&parsedJson)
-	return parsedJson
+	err := json.NewDecoder(response.Body).Decode(&parsedJson)
+	if err != nil {
+		return nil, err
+	}
+	return parsedJson, nil
 }
 
 func (*IAMJWTRSAPublicKeyBuilder) getSigningKey(responseJson map[string]interface{}) map[string]interface{} {
